@@ -1,8 +1,10 @@
-﻿
-
-#include <iostream>
+﻿#include <iostream>
+#include <fstream>
+#include <string>
+#include <list>
+using namespace std;
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    
 }
