@@ -37,7 +37,7 @@ void lru_test(std::list<int>& data_list, int cache_size) {
     std::cout << "Cache misses: " << cacheMisses << std::endl;
     std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
 }
-void fifo_test(int cache_size, const std::list<int>& data_list, const std::string& filename) {
+void fifo_test(int cache_size, std::list<int>& data_list, std::string& filename) {
     std::cout << "TESTING FIFO CACHE" << std::endl;
 
     FIFOCache<int> fifoCache(cache_size, filename);
@@ -153,6 +153,6 @@ int main()
     mru_test(data_list_v, cache_size);
     std::cout << "---------------------------\n";
     wb_test(data_list, cache_size);
-    std::cout << "---------------------------\n";
+
     lfu_test(data_list, cache_size);
 }
