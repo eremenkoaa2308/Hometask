@@ -1,5 +1,7 @@
 ﻿#include "FIFOCache.h"
 #include "LRUCache.h"
+#include "CACHE_BLAT.h"
+#include "LFUcache.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -8,58 +10,124 @@
 #include <unordered_map>
 using namespace std;
 
-void lru_test(int i) {
-    cout << "TESTING LRU CACHE" << endl;
-    LRUCache lruCache(i); // Создаем кэш с размером i
+void lru_test(std::list<int>& data_list, int cache_size) {
+    std::cout << "TESTING LRU CACHE" << std::endl;
+
+    LRUCache lruCache(cache_size);
     int totalOperations = 0;
     int cacheMisses = 0;
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    // Добавляем i элементов в кэш
-    for (int j = 1; j <= i; j++) {
-        lruCache.put(j, j * 10);
+    for (int key : data_list) {
+        int value = key * 10;
+        if (lruCache.get(key) == -1) {
+            cacheMisses++;
+            lruCache.put(key, value);
+        }
+
         totalOperations++;
+        lruCache.display();
     }
 
-    lruCache.display();
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
 
-    // Запрашиваем несколько элементов
-    for (int j = 1; j <= i; j++) {
-        if (lruCache.get(j) == -1) cacheMisses++;
+    std::cout << "Total operations: " << totalOperations << std::endl;
+    std::cout << "Cache misses: " << cacheMisses << std::endl;
+    std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
+}
+void fifo_test(int cache_size, const std::list<int>& data_list, const std::string& filename) {
+    std::cout << "TESTING FIFO CACHE" << std::endl;
+
+    FIFOCache<int> fifoCache(cache_size, filename);
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    fifoCache.Processing(fifoCache, data_list);
+
+    auto end = std::chrono::high_resolution_clock::now();
+    auto overall_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+
+    std::cout << "Cache misses: " << fifoCache.getMisses() << std::endl;
+    std::cout << "Cache hits: " << fifoCache.getHits() << std::endl;
+    std::cout << "Time taken: " << overall_time.count() << " microseconds" << std::endl;
+}
+void mru_test(std::vector<int>& data_list, int cache_size) {
+    std::cout << "TESTING MRU CACHE" << std::endl;
+    cout << "Количество промахов (page faults): " << mru(data_list,cache_size) << endl;
+}
+#include <list>
+#include <chrono>
+#include <iostream>
+#include "WriteBackCache.h"
+
+void wb_test(std::list<int>& data_list, int cache_size) {
+    std::cout << "TESTING WRITE-BACK CACHE" << std::endl;
+
+    WriteBackCache wbCache(cache_size); // Инициализация WriteBackCache
+    int totalOperations = 0;
+    int cacheMisses = 0;
+
+    auto start = std::chrono::high_resolution_clock::now();
+
+    for (int key : data_list) {
+        int value = key * 10;
+
+        if (wbCache.get(key) == -1) {
+            // Если ключ отсутствует в кэше (cache miss)
+            cacheMisses++;
+            wbCache.put(key, value);
+        }
+        else {
+            // Если ключ уже в кэше, помечаем его как грязный
+            wbCache.markDirty(key);
+        }
+
         totalOperations++;
+        wbCache.display(); // Отображение текущего состояния кэша
     }
 
-    // Запрашиваем элемент, который не существует
-    if (lruCache.get(i + 1) == -1) cacheMisses++;
-    totalOperations++;
+    auto end = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> duration = end - start;
 
-    // Изменяем порядок использования
-    lruCache.get(1); // Запрашиваем первый элемент
-    totalOperations++;
+    std::cout << "Total operations: " << totalOperations << std::endl;
+    std::cout << "Cache misses: " << cacheMisses << std::endl;
+    std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
+}
+void lfu_test(std::list<int>& data_list, int cache_size) {
+    std::cout << "TESTING LFU CACHE" << std::endl;
 
-    lruCache.display();
-    // Добавляем новый элемент, который вызовет вытеснение
-    lruCache.put(i + 1, (i + 1) * 10);
-    totalOperations++;
+    LFUCache lfuCache(cache_size); // Инициализация LFUCache
+    int totalOperations = 0;
+    int cacheMisses = 0;
 
-    lruCache.display();
+    auto start = std::chrono::high_resolution_clock::now();
 
-    // Запрашиваем элементы после добавления нового
-    for (int j = 1; j <= i; j++) {
-        if (lruCache.get(j) == -1) cacheMisses++;
+    for (int key : data_list) {
+        int value = key * 10;
+
+        if (lfuCache.get(key) == -1) {
+            // Если ключ отсутствует в кэше (cache miss)
+            cacheMisses++;
+            lfuCache.put(key, value);
+        }
+
         totalOperations++;
-    }
 
-    // Проверяем несколько пропусков
-    if (lruCache.get(i + 1) == -1) cacheMisses++;
-    totalOperations++;
+        // Отображение текущего состояния кэша
+        std::cout << "After processing key: " << key << "\n";
+        std::cout << "Cache contains:\n";
 
-    lruCache.display();
-    // Запрашиваем все элементы, чтобы проверить, что они доступны
-    for (int j = 1; j <= i; j++) {
-        if (lruCache.get(j) == -1) cacheMisses++;
-        totalOperations++;
+        // Отображение частот и ключей
+        for (auto& freq : lfuCache.getfreqlist()) {
+            std::cout << "Frequency " << freq.first << ": ";
+            for (auto& node : freq.second) {
+                std::cout << "{Key: " << node.key << ", Value: " << node.value << "} ";
+            }
+            std::cout << "\n";
+        }
+        std::cout << "---------------------------\n";
     }
 
     auto end = std::chrono::high_resolution_clock::now();
@@ -70,58 +138,21 @@ void lru_test(int i) {
     std::cout << "Time taken: " << duration.count() << " seconds" << std::endl;
 }
 
-void fifo_test(int cache_size, const std::list<int>& data_list, const std::string& filename) {
-    std::cout << "TESTING FIFO CACHE" << std::endl;
-
-    // Create a FIFO cache with the specified cache size and filename
-    FIFOCache<int> fifoCache(data_list, cache_size, filename);
-
-    int totalOperations = 0;
-    int cacheMisses = 0;
-
-    auto start = std::chrono::high_resolution_clock::now();
-
-    // Process all items in the data_list
-    for (const int& item : data_list) {
-        if (fifoCache.CheckIfProcessed(item, fifoCache.getProcessed_data())) {
-            // Check if the item is in the cache
-            if (fifoCache.FindInCache(fifoCache.cache, item)) {
-                fifoCache.setHits();
-            }
-            else {
-                fifoCache.FindInFile(fifoCache.filename, item);
-                fifoCache.setMisses();
-                fifoCache.CacheFilling(fifoCache.cache, item, fifoCache.size, totalOperations, fifoCache.filename);
-            }
-        }
-        else {
-            // Item hasn't been processed before
-            fifoCache.CacheFilling(fifoCache.cache, item, fifoCache.size, totalOperations, fifoCache.filename);
-            fifoCache.getProcessed_data().insert(item);
-        }
-        totalOperations++;
-    }
-
-    // Display the cache hit/miss statistics and overall operations
-    auto end = std::chrono::high_resolution_clock::now();
-    auto overall_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-    std::cout << "Total operations: " << totalOperations << std::endl;
-    std::cout << "Cache misses: " << fifoCache.getMisses() << std::endl;
-    std::cout << "Cache hits: " << fifoCache.getHits() << std::endl;
-    std::cout << "Time taken: " << overall_time.count() << " microseconds" << std::endl;
-}
-
 int main()
 {
+    setlocale(LC_ALL, "Russian");
     int i;
-    cout << "Enter size of lru_cache mas" << endl;
-    cin >> i;
-    //lru_test(i);
     int cache_size = 3;
-    std::list<int> data_list = { 1, 2, 3, 4, 2, 5, 1, 3 };  // Example data access sequence
-    std::string filename = "data.txt";  // Dummy filename for simulation
-
+    std::list<int> data_list = { 1, 2, 3, 4, 2, 5, 1, 3 };
+    lru_test(data_list,cache_size);
+    std::vector<int> data_list_v = { 1, 2, 3, 4, 2, 5, 1, 3 };
+    std::string filename = "data.txt";
+    cout << "------------" << endl;
     fifo_test(cache_size, data_list, filename);
-
+    cout << "------------" << endl;
+    mru_test(data_list_v, cache_size);
+    std::cout << "---------------------------\n";
+    wb_test(data_list, cache_size);
+    std::cout << "---------------------------\n";
+    lfu_test(data_list, cache_size);
 }

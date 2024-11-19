@@ -127,13 +127,27 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BLATOV.cpp" />
+    <ClCompile Include="CACHE_BLAT.cpp" />
+    <ClCompile Include="CASHE_BLAT.cpp" />
     <ClCompile Include="FIFOCache.cpp" />
     <ClCompile Include="Hometask_Project.cpp" />
+    <ClCompile Include="LFUcache.cpp" />
     <ClCompile Include="LRUCache.cpp" />
+    <ClCompile Include="wb.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BLATOV.h" />
+    <ClInclude Include="CACHE_BLAT.h" />
+    <ClInclude Include="CASHE_BLAT.h" />
     <ClInclude Include="FIFOCache.h" />
+    <ClInclude Include="LFUcache.h" />
     <ClInclude Include="LRUCache.h" />
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="wb.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Hometask_Project.rc" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
