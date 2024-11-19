@@ -136,7 +136,7 @@ inline void FIFOCache<T>::Processing(FIFOCache& FIFO)
 		else
 		{
 			CacheFilling(FIFO.cache, s, FIFO.size, id, FIFO.filename);
-			processed_data.insert(value);
+			processed_data.insert(s);
 		}
 	}
 	auto end = std::chrono::high_resolution_clock::now();
