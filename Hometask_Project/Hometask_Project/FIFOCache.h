@@ -16,7 +16,6 @@ class FIFOCache
 	std::unordered_set<T> processed_data;
 
 public:
-	std::list<T> data;
 	int size;
 	std::string filename;
 	std::list<T> cache;
@@ -28,13 +27,12 @@ public:
 	void ReplaceInCache(T value, int id, std::string& filename, std::list<T>& cache); //вытеснение из кэша в файл и замена на новое значение
 	bool CheckIfProcessed(T value, const std::unordered_set<T>& processed_data); //проверка на то, было ли вообще обработан этот объект
 	void CacheFilling(std::list<T>& data, T value, int size, int& id, std::string filename);
-	void Processing(FIFOCache& FIFO);
+	void Processing(FIFOCache& FIFO, std::list<T>& datalist);
 };
 
 template<typename T>
 inline FIFOCache<T>::FIFOCache(std::list<T> datalist, int s, std::string name)
 {
-	data = datalist;
 	size = s;
 	filename = name;
 }
@@ -101,7 +99,7 @@ inline bool FIFOCache<T>::CheckIfProcessed(T value, const std::unordered_set<T>&
 template<typename T>
 inline void FIFOCache<T>::CacheFilling(std::list<T>& cache, T value, int size, int& id, std::string filename)
 {
-	if (data.size() == size)
+	if (cache.size() == size)
 	{
 		ReplaceInCache(value, filename, cache);
 		id = ((id + 1) == size) ? 0: id + 1;
@@ -114,11 +112,11 @@ inline void FIFOCache<T>::CacheFilling(std::list<T>& cache, T value, int size, i
 }
 
 template<typename T>
-inline void FIFOCache<T>::Processing(FIFOCache& FIFO)
+inline void FIFOCache<T>::Processing(FIFOCache& FIFO, std::list<T>& data)
 {
 	auto start = std::chrono::high_resolution_clock::now();
 	int id = 0;
-	for (const auto& s : FIFO.data)
+	for (const auto& s : data)
 	{
 		if (CheckIfProcessed(s, FIFO.processed_data))
 		{
