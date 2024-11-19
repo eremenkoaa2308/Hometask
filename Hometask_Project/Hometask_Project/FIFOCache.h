@@ -1,4 +1,4 @@
-#pragma once
+п»ї#pragma once
 #include <iostream>
 #include <chrono>
 #include <fstream>
@@ -20,14 +20,19 @@ public:
 	std::string filename;
 	std::list<T> cache;
 
-	FIFOCache(std::list<T> datalist, int s, std::string name); //вызвать алгоритм кэша. передаем данные для обработки в виде массива, максимальный размер кэша, названия файла, в который скидываем все, что не уместилось в кэш
+	FIFOCache(std::list<T> datalist, int s, std::string name); //ГўГ»Г§ГўГ ГІГј Г Г«ГЈГ®Г°ГЁГІГ¬ ГЄГЅГёГ . ГЇГҐГ°ГҐГ¤Г ГҐГ¬ Г¤Г Г­Г­Г»ГҐ Г¤Г«Гї Г®ГЎГ°Г ГЎГ®ГІГЄГЁ Гў ГўГЁГ¤ГҐ Г¬Г Г±Г±ГЁГўГ , Г¬Г ГЄГ±ГЁГ¬Г Г«ГјГ­Г»Г© Г°Г Г§Г¬ГҐГ° ГЄГЅГёГ , Г­Г Г§ГўГ Г­ГЁГї ГґГ Г©Г«Г , Гў ГЄГ®ГІГ®Г°Г»Г© Г±ГЄГЁГ¤Г»ГўГ ГҐГ¬ ГўГ±ГҐ, Г·ГІГ® Г­ГҐ ГіГ¬ГҐГ±ГІГЁГ«Г®Г±Гј Гў ГЄГЅГё
 
-	bool FindInFile(std::string filename, T value); //поиск в файле
-	bool FindInCache(const std::list<T>& cache, T value); //поиск в кэше
-	void ReplaceInCache(T value, int id, std::string& filename, std::list<T>& cache); //вытеснение из кэша в файл и замена на новое значение
-	bool CheckIfProcessed(T value, const std::unordered_set<T>& processed_data); //проверка на то, было ли вообще обработан этот объект
+	bool FindInFile(std::string filename, T value); //ГЇГ®ГЁГ±ГЄ Гў ГґГ Г©Г«ГҐ
+	bool FindInCache(const std::list<T>& cache, T value); //ГЇГ®ГЁГ±ГЄ Гў ГЄГЅГёГҐ
+	void ReplaceInCache(T value, int id, std::string& filename, std::list<T>& cache); //ГўГ»ГІГҐГ±Г­ГҐГ­ГЁГҐ ГЁГ§ ГЄГЅГёГ  Гў ГґГ Г©Г« ГЁ Г§Г Г¬ГҐГ­Г  Г­Г  Г­Г®ГўГ®ГҐ Г§Г­Г Г·ГҐГ­ГЁГҐ
+	bool CheckIfProcessed(T value, const std::unordered_set<T>& processed_data); //ГЇГ°Г®ГўГҐГ°ГЄГ  Г­Г  ГІГ®, ГЎГ»Г«Г® Г«ГЁ ГўГ®Г®ГЎГ№ГҐ Г®ГЎГ°Г ГЎГ®ГІГ Г­ ГЅГІГ®ГІ Г®ГЎГєГҐГЄГІ
 	void CacheFilling(std::list<T>& data, T value, int size, int& id, std::string filename);
 	void Processing(FIFOCache& FIFO, std::list<T>& datalist);
+	int getHits() const { return hits; }
+	int getMisses() const { return misses; }
+	std::unordered_set<T> getProcessed_data() const { return processed_data; }
+	void setHits() { hits++; }
+	void setMisses() { misses++; }
 };
 
 template<typename T>
@@ -102,7 +107,7 @@ inline void FIFOCache<T>::CacheFilling(std::list<T>& cache, T value, int size, i
 	if (cache.size() == size)
 	{
 		ReplaceInCache(value, filename, cache);
-		id = ((id + 1) == size) ? 0: id + 1;
+		id = ((id + 1) == size) ? 0 : id + 1;
 	}
 	else
 	{
@@ -144,7 +149,3 @@ inline void FIFOCache<T>::Processing(FIFOCache& FIFO, std::list<T>& data)
 	std::cout << "Cache hits: " << FIFO.hits << std::endl;
 	std::cout << "Cache misses " << FIFO.misses << std::endl;
 }
-
-
-
-
