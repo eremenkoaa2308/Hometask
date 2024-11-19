@@ -74,39 +74,17 @@ void fifo_test(int cache_size, const std::list<int>& data_list, const std::strin
     std::cout << "TESTING FIFO CACHE" << std::endl;
 
     // Create a FIFO cache with the specified cache size and filename
-    FIFOCache<int> fifoCache(data_list, cache_size, filename);
-
-    int totalOperations = 0;
-    int cacheMisses = 0;
+    FIFOCache<int> fifoCache(cache_size, filename);
 
     auto start = std::chrono::high_resolution_clock::now();
 
-    // Process all items in the data_list
-    for (const int& item : data_list) {
-        if (fifoCache.CheckIfProcessed(item, fifoCache.getProcessed_data())) {
-            // Check if the item is in the cache
-            if (fifoCache.FindInCache(fifoCache.cache, item)) {
-                fifoCache.setHits();
-            }
-            else {
-                fifoCache.FindInFile(fifoCache.filename, item);
-                fifoCache.setMisses();
-                fifoCache.CacheFilling(fifoCache.cache, item, fifoCache.size, totalOperations, fifoCache.filename);
-            }
-        }
-        else {
-            // Item hasn't been processed before
-            fifoCache.CacheFilling(fifoCache.cache, item, fifoCache.size, totalOperations, fifoCache.filename);
-            fifoCache.getProcessed_data().insert(item);
-        }
-        totalOperations++;
-    }
+    fifoCache.Processing(fifoCache, data_list);
 
     // Display the cache hit/miss statistics and overall operations
     auto end = std::chrono::high_resolution_clock::now();
     auto overall_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
 
-    std::cout << "Total operations: " << totalOperations << std::endl;
+    //std::cout << "Total operations: " << totalOperations << std::endl;
     std::cout << "Cache misses: " << fifoCache.getMisses() << std::endl;
     std::cout << "Cache hits: " << fifoCache.getHits() << std::endl;
     std::cout << "Time taken: " << overall_time.count() << " microseconds" << std::endl;

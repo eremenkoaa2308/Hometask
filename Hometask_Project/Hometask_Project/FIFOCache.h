@@ -4,6 +4,7 @@
 #include <fstream>
 #include <string>
 #include <unordered_set>
+#include <set>
 #include <ios>
 #include <list>
 
@@ -13,6 +14,7 @@ class FIFOCache
 {
 	int misses = 0;
 	int hits = 0;
+	int total_operations = 0;
 	std::unordered_set<T> processed_data;
 
 public:
@@ -20,23 +22,21 @@ public:
 	std::string filename;
 	std::list<T> cache;
 
-	FIFOCache(std::list<T> datalist, int s, std::string name); //âûçâàòü àëãîðèòì êýøà. ïåðåäàåì äàííûå äëÿ îáðàáîòêè â âèäå ìàññèâà, ìàêñèìàëüíûé ðàçìåð êýøà, íàçâàíèÿ ôàéëà, â êîòîðûé ñêèäûâàåì âñå, ÷òî íå óìåñòèëîñü â êýø
+	FIFOCache(int s, std::string name); 
 
-	bool FindInFile(std::string filename, T value); //ïîèñê â ôàéëå
-	bool FindInCache(const std::list<T>& cache, T value); //ïîèñê â êýøå
-	void ReplaceInCache(T value, int id, std::string& filename, std::list<T>& cache); //âûòåñíåíèå èç êýøà â ôàéë è çàìåíà íà íîâîå çíà÷åíèå
-	bool CheckIfProcessed(T value, const std::unordered_set<T>& processed_data); //ïðîâåðêà íà òî, áûëî ëè âîîáùå îáðàáîòàí ýòîò îáúåêò
-	void CacheFilling(std::list<T>& data, T value, int size, int& id, std::string filename);
-	void Processing(FIFOCache& FIFO, std::list<T>& datalist);
+	bool FindInFile(std::string filename, T value); 
+	bool FindInCache(const std::list<T>& cache, T value); 
+	void ReplaceInCache(T value, std::string& filename, std::list<T>& cache); 
+	bool CheckIfProcessed(T value, const std::unordered_set<T>& processed_data); 
+	void CacheFilling(std::list<T>& data, T value, int size, std::string filename, int& total_operations);
+	void Processing(FIFOCache& FIFO, const std::list<T>& datalist);
 	int getHits() const { return hits; }
 	int getMisses() const { return misses; }
-	std::unordered_set<T> getProcessed_data() const { return processed_data; }
-	void setHits() { hits++; }
-	void setMisses() { misses++; }
+	std::unordered_set<T> getProcessed_data() const { return processed_data; };
 };
 
 template<typename T>
-inline FIFOCache<T>::FIFOCache(std::list<T> datalist, int s, std::string name)
+inline FIFOCache<T>::FIFOCache( int s, std::string name)
 {
 	size = s;
 	filename = name;
@@ -51,10 +51,10 @@ inline bool FIFOCache<T>::FindInFile(std::string filename, T value)
 		std::cout << "File doesn't exist or broken" << std::endl;
 		return 0;
 	}
-	T search;
+	std::string search;
 	while (std::getline(file, search))
 	{
-		if (search == value)
+		if (search == std::to_string(value))
 		{
 			file.close();
 			return 1;
@@ -80,18 +80,19 @@ inline bool FIFOCache<T>::FindInCache(const std::list<T>& cache, T value)
 }
 
 template<typename T>
-inline void FIFOCache<T>::ReplaceInCache(T value, int id, std::string& filename, std::list<T>& cache)
+inline void FIFOCache<T>::ReplaceInCache(T value, std::string& filename, std::list<T>& cache)
 {
-	std::ifstream file(filename, std::ios::app);
-	file << cache[id] << std::endl;
+	std::ofstream file(filename, std::ios::app);
+	file << cache.front() << std::endl;
 	file.close();
-	cache[id] = value;
+	cache.pop_front();
+	cache.push_back(value);
 }
 
 template<typename T>
 inline bool FIFOCache<T>::CheckIfProcessed(T value, const std::unordered_set<T>& processed_data)
 {
-	if (processed_data.contains(value))
+	if (processed_data.count(value))
 	{
 		return 1;
 	}
@@ -102,25 +103,22 @@ inline bool FIFOCache<T>::CheckIfProcessed(T value, const std::unordered_set<T>&
 }
 
 template<typename T>
-inline void FIFOCache<T>::CacheFilling(std::list<T>& cache, T value, int size, int& id, std::string filename)
+inline void FIFOCache<T>::CacheFilling(std::list<T>& cache, T value, int size, std::string filename, int& total_operations)
 {
 	if (cache.size() == size)
 	{
 		ReplaceInCache(value, filename, cache);
-		id = ((id + 1) == size) ? 0 : id + 1;
+		total_operations = total_operations + 2;
 	}
 	else
 	{
 		cache.push_back(value);
-		id++;
 	}
 }
 
 template<typename T>
-inline void FIFOCache<T>::Processing(FIFOCache& FIFO, std::list<T>& data)
+inline void FIFOCache<T>::Processing(FIFOCache& FIFO, const std::list<T>& data)
 {
-	auto start = std::chrono::high_resolution_clock::now();
-	int id = 0;
 	for (const auto& s : data)
 	{
 		if (CheckIfProcessed(s, FIFO.processed_data))
@@ -128,24 +126,21 @@ inline void FIFOCache<T>::Processing(FIFOCache& FIFO, std::list<T>& data)
 			if (FindInCache(FIFO.cache, s))
 			{
 				FIFO.hits++;
+				FIFO.total_operations++;
 			}
 			else
 			{
 				FindInFile(filename, s);
+				total_operations++;
 				FIFO.misses++;
-				CacheFilling(FIFO.cache, s, FIFO.size, id, FIFO.filename);
+				CacheFilling(FIFO.cache, s, FIFO.size, FIFO.filename, FIFO.total_operations);
 			}
 		}
 		else
 		{
-			CacheFilling(FIFO.cache, s, FIFO.size, id, FIFO.filename);
+			CacheFilling(FIFO.cache, s, FIFO.size, FIFO.filename, FIFO.total_operations);
 			processed_data.insert(s);
 		}
 	}
-	auto end = std::chrono::high_resolution_clock::now();
-	auto overall_time = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
-
-	std::cout << "Processing time: " << overall_time.count() << std::endl;
-	std::cout << "Cache hits: " << FIFO.hits << std::endl;
-	std::cout << "Cache misses " << FIFO.misses << std::endl;
+	std::cout << "Total operations: " << FIFO.total_operations << std::endl;
 }
