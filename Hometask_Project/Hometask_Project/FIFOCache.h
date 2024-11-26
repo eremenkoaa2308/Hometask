@@ -4,9 +4,10 @@
 #include <fstream>
 #include <string>
 #include <unordered_set>
-#include <set>
 #include <ios>
 #include <list>
+#include <deque>
+#include <algorithm>
 
 
 template <typename T>
@@ -20,15 +21,15 @@ class FIFOCache
 public:
 	int size;
 	std::string filename;
-	std::list<T> cache;
+	std::deque<T> cache;
 
 	FIFOCache(int s, std::string name); 
 
 	bool FindInFile(std::string filename, T value); 
-	bool FindInCache(const std::list<T>& cache, T value); 
-	void ReplaceInCache(T value, std::string& filename, std::list<T>& cache); 
+	bool FindInCache(const std::deque<T>& cache, T value); 
+	void ReplaceInCache(T value, std::string& filename, std::deque<T>& cache); 
 	bool CheckIfProcessed(T value, const std::unordered_set<T>& processed_data); 
-	void CacheFilling(std::list<T>& data, T value, int size, std::string filename, int& total_operations);
+	void CacheFilling(std::deque<T>& data, T value, int size, std::string filename, int& total_operations);
 	void Processing(FIFOCache& FIFO, const std::list<T>& datalist);
 	int getHits() const { return hits; }
 	int getMisses() const { return misses; }
@@ -63,24 +64,25 @@ inline bool FIFOCache<T>::FindInFile(std::string filename, T value)
 }
 
 template<typename T>
-inline bool FIFOCache<T>::FindInCache(const std::list<T>& cache, T value)
+inline bool FIFOCache<T>::FindInCache(const std::deque<T>& cache, T value)
 {
 	if (cache.empty())
 	{
 		std::cout << "Cache is empty" << std::endl;
 		return 0;
 	}
-	for (const auto& search : cache)
+	if (std::find(cache.begin(), cache.end(), value) != cache.end())
 	{
-		if (search == value)
-		{
-			return 1;
-		}
+		return 1;
+	}
+	else
+	{
+		return 0;
 	}
 }
 
 template<typename T>
-inline void FIFOCache<T>::ReplaceInCache(T value, std::string& filename, std::list<T>& cache)
+inline void FIFOCache<T>::ReplaceInCache(T value, std::string& filename, std::deque<T>& cache)
 {
 	std::ofstream file(filename, std::ios::app);
 	file << cache.front() << std::endl;
@@ -103,7 +105,7 @@ inline bool FIFOCache<T>::CheckIfProcessed(T value, const std::unordered_set<T>&
 }
 
 template<typename T>
-inline void FIFOCache<T>::CacheFilling(std::list<T>& cache, T value, int size, std::string filename, int& total_operations)
+inline void FIFOCache<T>::CacheFilling(std::deque<T>& cache, T value, int size, std::string filename, int& total_operations)
 {
 	if (cache.size() == size)
 	{
